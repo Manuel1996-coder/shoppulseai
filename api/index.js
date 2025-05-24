@@ -422,39 +422,44 @@ app.get('/api/test-shopify', async (req, res) => {
   }
 });
 
-// Statische Routen (behalten)
+// Statische Routen OHNE Shopify Middleware
 app.get('/dashboard', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/dashboard.html'));
 });
 
 app.get('/embedded', (req, res) => {
+  console.log('📱 /embedded route called with query:', req.query);
   res.sendFile(path.join(__dirname, '../public/embedded.html'));
 });
 
-// Root Route mit Shopify Entry Point
-app.get('/', shopify.ensureInstalledOnShop(), async (req, res) => {
-  const { shop, host, embedded } = req.query;
+// Root Route mit Shopify Entry Point (MIT Middleware nur wenn shop Parameter da ist)
+app.get('/', async (req, res) => {
+  const { shop, host, embedded, hmac } = req.query;
+  
+  console.log('🏠 Root route called with params:', { shop: !!shop, host: !!host, embedded: !!embedded, hmac: !!hmac });
   
   if (shop) {
-    const params = new URLSearchParams({
-      shop,
-      ...(host && { host }),
-      ...(embedded && { embedded })
+    // Wenn shop Parameter da ist, Shopify Middleware verwenden
+    return shopify.ensureInstalledOnShop()(req, res, () => {
+      const params = new URLSearchParams({
+        shop,
+        ...(host && { host }),
+        ...(embedded && { embedded }),
+        ...(hmac && { hmac })
+      });
+      
+      console.log('🔀 Redirecting to /embedded with params:', params.toString());
+      res.redirect(`/embedded?${params.toString()}`);
     });
-    
-    res.redirect(`/embedded?${params.toString()}`);
   } else {
+    // Ohne shop Parameter direkt zu embedded
+    console.log('🔀 No shop param, redirecting to /embedded');
     res.redirect('/embedded');
   }
 });
 
 // CSP Headers
 app.use(shopify.cspHeaders());
-
-// Catch-all für SPA
-app.use("/*", shopify.ensureInstalledOnShop(), async (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/embedded.html'));
-});
 
 // Nur lokal starten (nicht in Vercel)
 if (process.env.NODE_ENV !== 'production') {
