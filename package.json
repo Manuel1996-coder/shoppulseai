@@ -1,18 +1,26 @@
 {
-  "name": "my-node-app",
+  "name": "minimal-shopify-app",
   "version": "1.0.0",
-  "main": "web/index.js",
-  "license": "UNLICENSED",
+  "description": "Minimale Shopify App mit OAuth & App Bridge",
+  "main": "api/index.js",
   "scripts": {
-    "shopify": "shopify",
-    "build": "shopify app build",
-    "dev": "shopify app dev",
-    "info": "shopify app info",
-    "generate": "shopify app generate",
-    "deploy": "shopify app deploy"
+    "vercel-build": "echo 'Vercel Build - Keine weiteren Build-Schritte erforderlich'",
+    "dev": "node api/index.js"
   },
-  "dependencies": {
-    "@shopify/app": "^3.0.0",
-    "@shopify/cli": "^3.0.0"
-  }
+      "type": "module",
+    "dependencies": {
+        "axios": "^1.6.0",
+        "cookie-parser": "^1.4.6",
+        "cors": "^2.8.5",
+        "dotenv": "^16.0.3",
+        "express": "^4.18.2",
+        "express-session": "^1.18.1",
+        "@shopify/shopify-app-express": "^5.0.8",
+        "@shopify/shopify-api": "^11.0.0",
+        "@vercel/kv": "^1.0.1",
+        "compression": "^1.7.4"
+    },
+    "engines": {
+        "node": ">=18.0.0"
+    }
 }

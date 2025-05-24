@@ -5,5 +5,8 @@
   "i18n-ally.enabledFrameworks": [
     "i18next-shopify"
   ],
-  "i18n-ally.keystyle": "nested"
+  "i18n-ally.keystyle": "nested",
+  "workbench.colorTheme": "Cursor Dark",
+  "workbench.preferredDarkColorTheme": "Cursor Dark",
+  "workbench.preferredHighContrastColorTheme": "Cursor Dark"
 }
