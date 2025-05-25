@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Dashboard | ShopPulseAI</title>
+  <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #F6F6F7;
+      margin: 0;
+      padding: 0;
+    }
+    .metric-card {
+      transition: transform 0.2s;
+    }
+    .metric-card:hover {
+      transform: translateY(-4px);
+    }
+    .loading {
+      border: 3px solid #f3f3f3;
+      border-radius: 50%;
+      border-top: 3px solid #3b82f6;
+      width: 24px;
+      height: 24px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="p-6">
+    <div class="max-w-7xl mx-auto">
+      <!-- Header -->
+      <div class="bg-white p-6 rounded-lg shadow-sm mb-6">
+        <div class="flex justify-between items-center">
+          <div>
+            <h1 class="text-2xl font-bold text-gray-900">ShopPulseAI Dashboard</h1>
+            <p class="text-gray-600" id="shop-info">Verbunden mit Shop: <span id="shop-name">Wird geladen...</span></p>
+          </div>
+          <div>
+            <button id="refresh-data" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded text-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 inline-block mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Aktualisieren
+            </button>
+            <div class="text-xs text-gray-500 mt-2" id="last-updated"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading state -->
+      <div id="loading-state" class="bg-white p-6 rounded-lg shadow-sm mb-6 text-center">
+        <div class="loading mb-4"></div>
+        <p class="text-gray-600">Daten werden geladen...</p>
+      </div>
+
+      <!-- KPI Cards -->
+      <div id="kpi-cards" class="grid md:grid-cols-3 gap-6 mb-6 hidden">
+        <div class="bg-white p-6 rounded-lg shadow-sm metric-card border-t-4 border-blue-500">
+          <h3 class="text-lg font-semibold text-gray-700">Bestellungen Heute</h3>
+          <p class="text-3xl font-bold text-blue-600 mt-2" id="orders-today">-</p>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-sm metric-card border-t-4 border-green-500">
+          <h3 class="text-lg font-semibold text-gray-700">Umsatz Heute</h3>
+          <p class="text-3xl font-bold text-green-600 mt-2" id="revenue-today">-</p>
+        </div>
+        
+        <div class="bg-white p-6 rounded-lg shadow-sm metric-card border-t-4 border-purple-500">
+          <h3 class="text-lg font-semibold text-gray-700">Bestellungen (Monat)</h3>
+          <p class="text-3xl font-bold text-purple-600 mt-2" id="orders-month">-</p>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="grid md:grid-cols-2 gap-6 mb-6">
+        <div id="orders-stats" class="bg-white p-6 rounded-lg shadow-sm hidden">
+          <h2 class="text-xl font-semibold mb-4">Bestellungen</h2>
+          <div class="grid grid-cols-3 gap-4">
+            <div class="text-center p-3 bg-blue-50 rounded-lg">
+              <p class="text-sm text-gray-600">Heute</p>
+              <p class="text-xl font-bold text-blue-700" id="orders-today-small">-</p>
+            </div>
+            <div class="text-center p-3 bg-blue-50 rounded-lg">
+              <p class="text-sm text-gray-600">Diese Woche</p>
+              <p class="text-xl font-bold text-blue-700" id="orders-week">-</p>
+            </div>
+            <div class="text-center p-3 bg-blue-50 rounded-lg">
+              <p class="text-sm text-gray-600">Diesen Monat</p>
+              <p class="text-xl font-bold text-blue-700" id="orders-month-small">-</p>
+            </div>
+          </div>
+        </div>
+        
+        <div id="revenue-stats" class="bg-white p-6 rounded-lg shadow-sm hidden">
+          <h2 class="text-xl font-semibold mb-4">Umsatz</h2>
+          <div class="grid grid-cols-3 gap-4">
+            <div class="text-center p-3 bg-green-50 rounded-lg">
+              <p class="text-sm text-gray-600">Heute</p>
+              <p class="text-xl font-bold text-green-700" id="revenue-today-small">-</p>
+            </div>
+            <div class="text-center p-3 bg-green-50 rounded-lg">
+              <p class="text-sm text-gray-600">Diese Woche</p>
+              <p class="text-xl font-bold text-green-700" id="revenue-week">-</p>
+            </div>
+            <div class="text-center p-3 bg-green-50 rounded-lg">
+              <p class="text-sm text-gray-600">Diesen Monat</p>
+              <p class="text-xl font-bold text-green-700" id="revenue-month">-</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Products -->
+      <div id="top-products" class="bg-white p-6 rounded-lg shadow-sm hidden">
+        <h2 class="text-xl font-semibold mb-4">Top Produkte</h2>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Produkt</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Lagerbestand</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preis</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200" id="product-table-body">
+              <!-- Dynamic content -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', async function() {
+      const params = new URLSearchParams(window.location.search);
+      const shop = params.get('shop');
+      const host = params.get('host');
+
+      console.log('📊 Dashboard geladen für Shop:', shop);
+
+      if (shop) {
+        document.getElementById('shop-name').textContent = shop;
+      }
+
+      // Refresh Button
+      document.getElementById('refresh-data').addEventListener('click', loadKPIs);
+
+      // KPIs laden
+      await loadKPIs();
+    });
+
+    async function loadKPIs() {
+      try {
+        console.log('📊 Lade KPIs...');
+        document.getElementById('loading-state').classList.remove('hidden');
+        
+        const response = await fetch('/api/shop-kpis', {
+          credentials: 'include'
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('✅ KPIs geladen:', data);
+
+        // Loading ausblenden
+        document.getElementById('loading-state').classList.add('hidden');
+        
+        // KPI Cards anzeigen
+        document.getElementById('kpi-cards').classList.remove('hidden');
+        document.getElementById('orders-stats').classList.remove('hidden');
+        document.getElementById('revenue-stats').classList.remove('hidden');
+        document.getElementById('top-products').classList.remove('hidden');
+
+        // Daten einfügen
+        updateElement('orders-today', data.orders.today);
+        updateElement('orders-today-small', data.orders.today);
+        updateElement('orders-week', data.orders.thisWeek);
+        updateElement('orders-month', data.orders.thisMonth);
+        updateElement('orders-month-small', data.orders.thisMonth);
+
+        updateElement('revenue-today', formatCurrency(data.revenue.today, data.shop.currency));
+        updateElement('revenue-today-small', formatCurrency(data.revenue.today, data.shop.currency));
+        updateElement('revenue-week', formatCurrency(data.revenue.thisWeek, data.shop.currency));
+        updateElement('revenue-month', formatCurrency(data.revenue.thisMonth, data.shop.currency));
+
+        // Top Produkte
+        const tbody = document.getElementById('product-table-body');
+        tbody.innerHTML = '';
+        
+        data.topProducts.forEach(product => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="flex items-center">
+                <div class="flex-shrink-0 h-10 w-10">
+                  <img class="h-10 w-10 rounded-md object-cover" src="${product.image}" alt="${product.title}">
+                </div>
+                <div class="ml-4">
+                  <div class="text-sm font-medium text-gray-900">${product.title}</div>
+                </div>
+              </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${product.inventory}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatCurrency(product.price, data.shop.currency)}</td>
+          `;
+          tbody.appendChild(row);
+        });
+
+        // Letzte Aktualisierung
+        updateElement('last-updated', `Letzte Aktualisierung: ${new Date().toLocaleTimeString()}`);
+
+      } catch (error) {
+        console.error('❌ Fehler beim Laden der KPIs:', error);
+        document.getElementById('loading-state').innerHTML = `
+          <div class="bg-red-50 p-4 rounded-md border border-red-200">
+            <h3 class="text-red-800 font-medium">Fehler beim Laden der Daten</h3>
+            <p class="text-red-700 mt-2">${error.message}</p>
+            <button onclick="window.location.reload()" class="mt-2 text-blue-600 hover:text-blue-800 underline">
+              Seite neu laden
+            </button>
+          </div>
+        `;
+      }
+    }
+
+    function formatCurrency(amount, currency = 'EUR') {
+      return new Intl.NumberFormat('de-DE', {
+        style: 'currency',
+        currency: currency
+      }).format(amount);
+    }
+
+    function updateElement(id, value) {
+      const element = document.getElementById(id);
+      if (element) {
+        element.textContent = value;
+      }
+    }
+  </script>
+</body>
+</html> 

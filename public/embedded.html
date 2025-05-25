@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>ShopPulseAI Loading...</title>
+  <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: #F6F6F7;
+      margin: 0;
+      padding: 50px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .loading-spinner {
+      border: 4px solid #f3f3f3;
+      border-radius: 50%;
+      border-top: 4px solid #3b82f6;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .status {
+      text-align: center;
+      color: #666;
+    }
+    .debug-info {
+      margin-top: 20px;
+      padding: 10px;
+      background: #f0f0f0;
+      border-radius: 5px;
+      font-size: 12px;
+      color: #666;
+      max-width: 600px;
+    }
+  </style>
+</head>
+<body>
+  <div class="loading-spinner"></div>
+  <div class="status">
+    <h2>🚀 ShopPulseAI wird geladen...</h2>
+    <p id="status-text">Initialisierung...</p>
+  </div>
+  
+  <div class="debug-info" id="debug-info" style="display: none;">
+    <strong>Debug Info:</strong><br>
+    <span id="debug-content"></span>
+  </div>
+
+  <script>
+    // URL Parameter extrahieren
+    const urlParams = new URLSearchParams(window.location.search);
+    const shop = urlParams.get('shop');
+    const host = urlParams.get('host');
+    const hmac = urlParams.get('hmac');
+    const timestamp = urlParams.get('timestamp');
+
+    console.log('📱 Embedded App gestartet:', { shop, host, hmac: !!hmac, timestamp });
+
+    // Status updates
+    function updateStatus(message) {
+      document.getElementById('status-text').textContent = message;
+    }
+
+    function showDebug(info) {
+      document.getElementById('debug-content').innerHTML = info;
+      document.getElementById('debug-info').style.display = 'block';
+    }
+
+    // Debugging info anzeigen
+    showDebug(`
+      Shop: ${shop || 'nicht gefunden'}<br>
+      Host: ${host || 'nicht gefunden'}<br>
+      HMAC: ${hmac ? 'vorhanden' : 'fehlt'}<br>
+      Timestamp: ${timestamp || 'nicht gefunden'}<br>
+      URL: ${window.location.href}
+    `);
+
+    if (!shop) {
+      updateStatus('❌ Fehler: Shop-Parameter fehlt');
+      showDebug('Shop-Parameter ist erforderlich für die App-Installation.');
+      console.error('Shop parameter missing');
+    } else {
+      updateStatus('✅ Shop erkannt, starte OAuth...');
+      
+      // OAuth-Flow starten
+      console.log('🔐 Starte OAuth für Shop:', shop);
+      
+      // Nach kurzer Verzögerung zum Auth-Endpoint weiterleiten
+      setTimeout(() => {
+        const authUrl = `/api/auth?shop=${encodeURIComponent(shop)}`;
+        console.log('🔀 Weiterleitung zu:', authUrl);
+        updateStatus('🔄 Weiterleitung zur Authentifizierung...');
+        
+        window.location.href = authUrl;
+      }, 1000);
+    }
+
+    // Shopify App Bridge Initialisierung (falls schon authentifiziert)
+    if (host && shop) {
+      try {
+        // API Key vom Server holen
+        fetch('/api/shopify/api-key')
+          .then(response => response.json())
+          .then(data => {
+            if (data.apiKey) {
+              console.log('🔑 API Key erhalten, initialisiere App Bridge');
+              
+              // App Bridge initialisieren
+              const app = window.ShopifyApp && window.ShopifyApp.createApp 
+                ? window.ShopifyApp.createApp({
+                    apiKey: data.apiKey,
+                    host: host,
+                    forceRedirect: true
+                  })
+                : null;
+
+              if (app) {
+                console.log('✅ App Bridge initialisiert');
+                updateStatus('✅ App Bridge verbunden');
+                
+                // Nach Dashboard weiterleiten wenn schon authentifiziert
+                setTimeout(() => {
+                  window.location.href = '/dashboard?shop=' + encodeURIComponent(shop) + '&host=' + encodeURIComponent(host);
+                }, 500);
+              }
+            }
+          })
+          .catch(error => {
+            console.log('⚠️ API Key Fehler (normal bei erster Installation):', error);
+            // Ignorieren - OAuth-Flow wird trotzdem gestartet
+          });
+      } catch (error) {
+        console.log('⚠️ App Bridge Fehler (normal bei erster Installation):', error);
+        // Ignorieren - OAuth-Flow wird trotzdem gestartet
+      }
+    }
+
+    // Error Handler
+    window.addEventListener('error', function(event) {
+      console.error('🔥 JavaScript Fehler:', event.error);
+      updateStatus('❌ Fehler beim Laden der App');
+      showDebug(`Fehler: ${event.error?.message || 'Unbekannter Fehler'}`);
+    });
+  </script>
+</body>
+</html> 
