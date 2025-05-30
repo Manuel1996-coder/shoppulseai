@@ -17,7 +17,7 @@
         "express-session": "^1.18.1",
         "@shopify/shopify-app-express": "^5.0.8",
         "@shopify/shopify-api": "^11.0.0",
-        "@vercel/kv": "^1.0.1",
+        "@vercel/kv": "^3.0.0",
         "compression": "^1.7.4"
     },
     "engines": {
